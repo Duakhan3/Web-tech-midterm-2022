@@ -1,0 +1,8 @@
+GET http://localhost:3000/movieslist/Doug Unplugs Season 2 HTTP/1.1
+
+### 
+GET http://localhost:3000/issuelist/99 HTTP/1.1
+
+### 
+GET http://localhost:3000/WholeList HTTP/1.1
+

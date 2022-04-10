@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta>
+	<title>@model.title</title>
+	<link rel='stylesheet' href='/stylesheets/style.css' />
+	<!-- <link rel='stylesheet' href='/stylesheets/tpl_style.css' /> -->
+
+
+	<link rel="stylesheet" href="/bootstrap/css/bootstrap.min.css" />
+	<script type="text/javascript" src="/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript">
+		const Reset = () => {
+			$('#list').hide();
+			$('#issuelist').hide();
+		}
+		const IssueL = [];
+		var Amount = 0;
+		var currentQuantity = 0;
+		var PreviousQuantity = 0;
+		$(document).ready(function () {
+			Reset();
+			$('#search').keypress(function (e) {
+				if (e.which == 13) {
+					GetMovies();
+				}
+			})
+			getAllMovies();
+			IssueMovies();
+			
+			
+		})
+
+		const getAllMovies = () => {
+			$.ajax({
+				url: `/WholeList`
+			}).then(movies => {
+				console.log(movies);
+				$('#list > div > div').empty();
+				$.each(movies, function (mi, movie) {
+					let temp = `
+							<a href="#!" title="${movie.title}" id="${movie.tid}" rent="${movie.rent}" class="title"
+											rented="false">
+								<img width="194px" height="252px" src="images/${movie.image}">
+									<h1 class="item-status" id="pic-${movie.tid}" style="display: none;">Issued</h1>
+										<div class="item-title">${movie.title}
+											<br>
+											<span class="textWhite">${movie.type}</span>
+										</div>
+							</a>                
+                   		 `
+					$('#list > div > div').append(temp);
+				})
+				$('#list').show();
+				$('.title').click(function() {
+					console.log(this.id);
+					AddInIssueList(this.id)
+					});
+			})
+		}
+		const GetMovies = () => {
+			const mname = $('#search').val();
+			$.ajax({
+				url: `/movieslist/${mname}`
+			}).then(movies => {
+				console.log(movies);
+				$('#list > div > div').empty();
+				$.each(movies, function (mi, movie) {
+					let temp = `
+							<a href="#!" title="${movie.title}" id="${movie.tid}" rent="${movie.rent}" class="title"
+											rented="false">
+								<img width="194px" height="252px" src="images/${movie.image}">
+									<div class="item-status" style="display: none;">Issued</div>
+										<div class="item-title">${movie.title}
+											<br>
+											<span class="textWhite">${movie.type}</span>
+										</div>
+							</a>                
+                   		 `
+					$('#list > div > div').append(temp);
+				})
+				$('#list').show();
+
+				$('.title').click(function() {
+					console.log(this.id);
+					
+					AddInIssueList(this.id)
+					});
+			})
+		}
+	
+		const AddInIssueList = (id) => {
+				$.ajax({
+					url: `/issuelist/${id}`
+				}).then(IssueListmovies => {
+					console.log(IssueListmovies);
+					$('#store > div.store').empty();
+					IssueL.push(IssueListmovies);
+					const temp = IssueL.map(a => a.rent);
+					Amount = temp.reduce((a, b) => a + b, 0);
+					$("#storeCount").text(`Store(${(IssueL.length)})`)
+					$('#amt').html(Amount)
+					console.log(IssueL);
+
+					IssueL.map(movies => {
+						const temp2 = `
+							<img src="images/${movies.image}" height="150px" title=""><br>
+								<input type="number" class="discount" name="discount" id="t-${movies.tid}" value="1"
+									style="width: 35px;">
+								<span>Rent : </span><span class="rent" id="r-${movies.rent}" rent="${movies.rent}" style="width: 35px;">${movies.rent}</span>
+							`
+							$("#store > div.store").append(temp2);
+							$(`#t-${movies.tid}`).on('input', function() {
+								PreviousQuantity = currentQuantity;
+								currentQuantity = $(`#t-${movies.tid}`).val()
+								OnChangeUpdateAmount(movies.tid, currentQuantity, PreviousQuantity);
+							});		
+					})
+					$('#issuelist').show();	
+				})
+		}
+
+		const OnChangeUpdateAmount = (tid, currentQuantity, PreviousQuantity) => {
+if(currentQuantity < PreviousQuantity){
+			console.log("Amount", Amount)
+			const rent = IssueL.find(x => x.tid == tid).rent;
+			Amount = Amount - rent ;
+			$('#amt').html(Amount);
+}else{
+			console.log("Amount", Amount)
+			const rent = IssueL.find(x => x.tid == tid).rent;
+			Amount = Amount + rent ;
+			$('#amt').html(Amount);
+}
+			
+		}
+	
+		const IssueMovies = () => {
+			$('#issue').click(function(){
+				console.log("IssueL", IssueL)
+				// $.ajax({
+				// 	url: `/issueMovies`,
+				// 	method: 'POST',
+				// 	data: {IssueL: JSON.stringify(IssueL)}
+				// }).then(IssueListmovies => {
+				// 	console.log(IssueListmovies);
+					
+				// })
+				$.ajax({
+                url: `/issueMovies`,
+                method: 'POST',
+                data: { 'final': JSON.stringify(IssueL)}
+				}).then(function (res) {
+					console.log(res, "POST RESPONSE");
+					if(res.length > 0){
+						alert("Inserted Successfully");
+						res.map((val) => {
+
+							$(`#pic-${val.tid} = ${val.tid}`).show();
+						})
+					}
+				})
+			})
+		}
+	</script>
+
+</head>
+
+<body>
+	<nav class="navbar navbar-light justify-content-between" style="background-color: #e3f2fd;">
+		<div class="col hdr">
+			<input class="form-control pbk" type="text" id="search" placeholder="Search" aria-label="Search">
+		</div>
+		<div class="col hdr" style="text-align: right ;">
+			<a href="#!" class="navbar-brand" id="issue">Issue</a>
+			<a href="#!" class="navbar-brand link" id="storeCount"></a>
+		</div>
+
+	</nav>
+
+	<table style="width: 100%;">
+		<tbody>
+			<tr>
+				<td style="width: 85%; vertical-align: top; " id="list">
+					<div class="scrollable">
+						<div class="items">
+							</div>
+					</div>
+				</td>
+				<td style="vertical-align: top; text-align: center;" id="issuelist">
+					<div id="store">
+						<div style="padding: 10px; font-size: 20px;">Amount:<span id="amt" value=""></span></div>
+
+						<div class="store">
+							
+						</div>
+					</div>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
+
+
+
+
+
+
+</body>
+
+</html>
